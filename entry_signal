@@ -1,0 +1,700 @@
+//+------------------------------------------------------------------+
+//|                                             account_position.mqh |
+//|                                  Copyright 2022, MetaQuotes Ltd. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2022, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#include <Trade\Trade.mqh>
+#include <Trade\PositionInfo.mqh>
+CTrade trade;
+CPositionInfo  m_position;
+
+//double accountPosition()
+//{
+//   if(PositionSelect(_Symbol)==true)
+//   {
+//      for(int i=PositionsTotal()-1; i>0; i--)
+//      {
+//      ulong ticket=PositionGetTicket(i); PositionSelectByTicket(ticket);
+//      string PositionSymbol=PositionGetString(POSITION_SYMBOL);
+//      double pricecurrent= PositionGetDouble(POSITION_PRICE_CURRENT);
+//      double priceopen= PositionGetDouble(POSITION_PRICE_OPEN);
+//
+//      Comment(
+//                        "Position Number: ", i,"\n",
+//                        "Position Ticket: ",ticket+"\n",
+//                        "Position Symbol: ",PositionSymbol+"\n",
+//                        "PositionProfit: ",pricecurrent+"\n",
+//                        "PositionCurrent: ",priceopen
+//              );
+//      }
+//   }
+//  return NULL;
+//}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+double EMA9()
+  {
+   double ema9Array[];
+   int ema9 = iMA(_Symbol,_Period,9,0,MODE_EMA,PRICE_CLOSE);
+   ArraySetAsSeries(ema9Array,true);
+   CopyBuffer(ema9,0,0,3,ema9Array);
+   return ema9Array[0];
+  }
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+double EMA20()
+  {
+   double ema20Array[];
+   int ema = iMA(_Symbol,_Period,20,0,MODE_EMA,PRICE_CLOSE);
+   ArraySetAsSeries(ema20Array,true);
+   CopyBuffer(ema,0,0,3,ema20Array);
+   double ema20=ema20Array[0];
+   return ema20;
+  }
+
+
+
+void howIsIndicator()  //use for execute trade
+  {
+//------EMA Calculation
+   double ema9Array[], ema20Array[];
+   int ema9 = iMA(_Symbol,_Period,9,0,MODE_EMA,PRICE_CLOSE);
+   int ema20 = iMA(_Symbol,_Period,20,0,MODE_EMA,PRICE_CLOSE);
+   ArraySetAsSeries(ema9Array,true);
+   ArraySetAsSeries(ema20Array,true);
+   CopyBuffer(ema9,0,0,3,ema9Array);
+   CopyBuffer(ema20,0,0,3,ema20Array);
+//-----------
+   bool isCrossDown=false;
+   bool isCrossUp=false;
+   bool status=false;
+   bool inPositionSell=false;
+   string cross="";
+   double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
+
+   double ask=NormalizeDouble(SymbolInfoDouble(_Symbol,SYMBOL_ASK),_Digits);
+   double bid=NormalizeDouble(SymbolInfoDouble(_Symbol,SYMBOL_BID),_Digits);
+   MqlTick last_tick;
+
+
+   if(ema9 > ema20)
+     {
+
+      if(PositionsTotal()==0)
+        {
+         Comment("Preparing SELL ");
+         if((last_tick.bid < ema20Array[0]) && (ema9Array[2] > ema20Array[2]))
+           {
+            trade.Sell(0.05,_Symbol,bid,0,0,NULL);
+            Comment("Open Sell!!");
+           }
+        }
+      if(PositionsTotal()==1)
+        {
+         Comment("You are in position Buy");
+         if((last_tick.bid < ema20Array[0]) && (ema9Array[2] > ema20Array[2]))
+           {
+            trade.PositionClose(PositionGetTicket(0));
+            Comment("Close Position Buy");
+           }
+        }
+     }
+
+   if(ema9 < ema20)
+     {
+      if(PositionsTotal()==0)
+        {
+         Comment("Prepare buy");
+         if((last_tick.ask > ema20Array[0]) && (ema9Array[2] < ema20Array[2]))
+           {
+            trade.Buy(0.05,_Symbol,ask,0,0,NULL);
+            Comment("Open Buy!!");
+           }
+        }
+      if(PositionsTotal()==1)
+        {
+         Comment("On position SELL ");
+         if((last_tick.ask > ema20Array[0]) && (ema9Array[2] < ema20Array[2]))
+           {
+            trade.PositionClose(PositionGetTicket(0));
+            Comment("CLOSE SELL");
+           }
+        }
+
+     }
+
+  }
+
+
+void currentPrice()
+  {
+   MqlRates PriceInfo[];
+   ArraySetAsSeries(PriceInfo,true);
+   double closePrice= PriceInfo[0].close;
+
+   Comment("Close price is : ",closePrice);
+  }
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void lastTick()
+  {
+   MqlTick last_tick;
+
+   if(SymbolInfoTick(Symbol(),last_tick))
+     {
+      Comment("Bid = ",last_tick.bid, "Ask = ",last_tick.ask);
+     }
+   else
+      Comment("Error", GetLastError());
+  }
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+double getClosePrice(int num)
+  {
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double closePrice=PriceInformation[num].close;
+   
+   return closePrice;
+  }
+  
+double getOpenPrice(int num)
+  {
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double openPrice=PriceInformation[num].open;
+   
+   return openPrice;
+  }
+
+double getHighPrice(int num)
+  {
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double highPrice=PriceInformation[num].high;
+   
+   return highPrice;
+  }
+  
+double getLowPrice(int num)
+  {
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double lowPrice=PriceInformation[num].low;
+   
+   return lowPrice;
+  }
+
+
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+string checkEntryBuy()  //use for execute trade
+  {
+//------EMA Calculation
+   double ema9Array[], ema20Array[];
+   int ema9 = iMA(_Symbol,_Period,9,0,MODE_EMA,PRICE_CLOSE);
+   int ema20 = iMA(_Symbol,_Period,20,0,MODE_EMA,PRICE_CLOSE);
+   ArraySetAsSeries(ema9Array,true);
+   ArraySetAsSeries(ema20Array,true);
+   CopyBuffer(ema9,0,0,3,ema9Array);
+   CopyBuffer(ema20,0,0,3,ema20Array);
+//-----------
+   
+   double priceClose=getClosePrice(0);
+   double priceOpen=getOpenPrice(0);
+   string entry = "";
+
+   if(getClosePrice(1)>ema20Array[1] && getOpenPrice(1)>ema20Array[1] && ema9Array[1]>ema20Array[1])
+      {   
+         entry="Buy";
+      }
+   //else if(ema9Array[1]>ema20Array[1] || getClosePrice(1)>ema20Array[1])
+   //   {
+   //      entry="Buy";
+   //   }
+        
+   else if(getClosePrice(1)<ema20Array[1] && getOpenPrice(1)>ema9Array[1] && ema9Array[1]>ema20Array[1])  //if((ema9Array[0]<ema20Array[0]) && (priceOpen>priceClose) && (ema9Array[1]>ema20Array[1]))
+      {
+         entry="Close";
+      } 
+   //else if(ema20Array[2]>ema9Array[2] && getClosePrice(2)<ema9Array[2] && getOpenPrice(2)>ema20Array[2])
+   //   {
+   //      entry="Close";
+   //   }  
+   else
+         entry="False";   
+        
+         
+      return entry;
+  }
+  
+string checkEntrySell()  //use for execute trade
+  {
+//------EMA Calculation
+   double ema9Array[], ema20Array[];
+   int ema9 = iMA(_Symbol,_Period,9,0,MODE_EMA,PRICE_CLOSE);
+   int ema20 = iMA(_Symbol,_Period,20,0,MODE_EMA,PRICE_CLOSE);
+   ArraySetAsSeries(ema9Array,true);
+   ArraySetAsSeries(ema20Array,true);
+   CopyBuffer(ema9,0,0,3,ema9Array);
+   CopyBuffer(ema20,0,0,3,ema20Array);
+//-----------
+   
+   bool status=false;
+   double priceClose=getClosePrice(0);
+   double priceOpen=getOpenPrice(0);
+   string entry = "";
+
+//   if(getOpenPrice(1)<ema9Array[1] && getClosePrice(1)>ema20Array[1] && ema9Array[1]>ema20Array[1])     //(ema9Array[0]>ema20Array[0]) && (ema9Array[1]<ema20Array[1]))
+//      {   
+//         entry="Close";
+//      }
+//      
+   if(isCandleBullOrBear(1)=="Bull" && ema9Array[1]>ema20Array[1])   
+      {
+         entry="Close";
+      }
+   //else if(getClosePrice(1)<ema20Array[1] && ema9Array[1]>ema20Array[1]) //ema9[1]>ema20[1] and close[1]<ema20[1]
+   //   {
+   //      entry="Sell";
+   //   }
+        
+   else if(ema9Array[0]<ema20Array[0] && getClosePrice(1)<ema20Array[1] && getOpenPrice(1)<ema9Array[1])  //if((ema9Array[0]<ema20Array[0]) && (priceOpen>priceClose) && (ema9Array[1]>ema20Array[1]))
+      {
+         entry="Sell";
+      }   
+   else
+         entry="False";   
+        
+         
+      return entry;
+  }
+
+
+int getOrderType()
+{
+   double   open_price;
+   double   initial_volume;
+   long     positionID;
+   double   position_profit;
+   ulong    TicketNumber=0;
+   string   MyResult="";
+   int      type;
+   
+//--- number of current positions
+
+   uint     total=PositionsTotal();
+   TicketNumber=HistoryDealGetTicket(0);
+//--- go through orders in a loop
+   for(uint i=0;i<total;i++)
+     {
+      //--- return order ticket by its position in the list
+      if(PositionSelect(_Symbol)==true)
+        {
+         //--- return order properties
+         open_price    =PositionGetDouble(POSITION_PRICE_OPEN);
+         positionID    =PositionGetInteger(POSITION_IDENTIFIER);
+         initial_volume=PositionGetDouble(POSITION_VOLUME);
+         position_profit=PositionGetDouble(POSITION_PROFIT);
+         
+         //type=HistoryDealGetInteger(TicketNumber,DEAL_TYPE);
+         type          =PositionGetInteger(POSITION_TYPE);
+         
+         
+         //MyResult="Open Price = "+open_price + "Type = "+type;
+        }
+      }
+      return type;
+}
+
+
+string engulfingSignal()
+{
+   
+   string engulfing="";
+
+   
+   if(isCandleBullOrBear(2)=="Bear" && getOpenPrice(1)<=getClosePrice(2) && getClosePrice(1)>=getOpenPrice(2))
+   {
+      engulfing="Buy";
+   }
+   
+   else if(isCandleBullOrBear(2)=="Bull" && isCandleBullOrBear(1)=="Bear" && getOpenPrice(1)>=getClosePrice(2) && getClosePrice(1)<getOpenPrice(2))
+   {
+      engulfing="Sell";
+   }
+   
+   else
+      engulfing="Nothing";
+      
+   return engulfing;
+}
+
+string engulfingBuy()
+{
+   string signal="Buy";
+   
+   if(isCandleBullOrBear(3)=="Bear" && getOpenPrice(2)<=getClosePrice(3) && getClosePrice(2)>=getOpenPrice(3))
+   {
+      signal="Buy";
+   }
+   else
+      signal="Nothing";
+      
+   return signal;
+}
+
+string engulfingSell()
+{
+   string signal="Sell";
+   
+   if(isCandleBullOrBear(3)=="Bull" && getOpenPrice(2)>=getClosePrice(3) && getClosePrice(2)<getOpenPrice(3))
+   {
+      signal="Sell";
+   }
+   else
+      signal="Nothing";
+      
+   return signal;
+}
+
+string isCandleBullOrBear(int num)
+{
+   
+   string candle="";
+   
+   if(getClosePrice(num) < getOpenPrice(num))
+   {
+      candle="Bear";
+   }
+   
+   if(getClosePrice(num) > getOpenPrice(num))
+   {
+      candle="Bull";
+   }
+   
+   return candle;
+}
+
+
+string isMorningStar(int num)
+{
+   string candle="";
+   double gap;
+   double ratio;
+   
+   gap= getHighPrice(num)-getLowPrice(num);
+   ratio= (gap*0.44)+ getLowPrice(num);
+   
+   if(getClosePrice(num)<=ratio && getOpenPrice(num)>=getLowPrice(num) && getClosePrice(num)>getOpenPrice(num))
+   {
+      candle="MorningStar";
+   }
+   else
+      candle="Keep going";
+      
+   return candle;
+   
+}
+
+
+string isMorningStarRed(int num)
+{
+   string candle="";
+   double gap;
+   double ratio;
+   double head;
+   
+   gap= getHighPrice(num)-getLowPrice(num);
+   ratio= (gap*0.44)+ getLowPrice(num);
+   
+   head=getLowPrice(num)+(gap*0.1);
+   
+   if(getOpenPrice(num)<=ratio && getClosePrice(num)>=getLowPrice(num) && getClosePrice(num)<getOpenPrice(num) && getClosePrice(num)<=head)
+   {
+      candle="MorningStarRed";
+   }
+   else
+      candle="Keep going";
+      
+   return candle;
+   
+}
+
+//if previous candle is hammer and current candle is bullish
+
+string isHammer(int num)
+{
+   string candle="";
+   double gap;
+   double ratio;
+   double headHammer;
+   
+   gap= getHighPrice(num)-getLowPrice(num);
+   ratio= getHighPrice(num)-(gap*0.43);
+   
+   headHammer=getHighPrice(num)-(gap*0.1);
+   
+   if(isCandleBullOrBear(num)=="Bear" && getClosePrice(num)>=ratio && getOpenPrice(num)<=getHighPrice(num) && getOpenPrice(num)>=headHammer)
+   {
+      candle="Hammer";
+   }
+   return candle;
+}
+
+string isHammerGreen(int num)
+{
+   string candle="";
+   double gap;
+   double ratio;
+   double headHammer;
+   
+   gap= getHighPrice(num)-getLowPrice(num);
+   ratio= getHighPrice(num)-(gap*0.43);
+   
+   headHammer=getHighPrice(num)-(gap*0.1);
+   
+   if(isCandleBullOrBear(num)=="Bull" && getOpenPrice(num)>=ratio && getClosePrice(num)<=getHighPrice(num) && getClosePrice(num)>=headHammer)
+   {
+      candle="HammerGreen";
+   }
+   return candle;
+}
+
+string isDoji(int num)
+{
+   string candle="";
+   double open;
+   double range;
+   double close;
+   
+   range= getHighPrice(num)-getLowPrice(num);
+   open= getLowPrice(num)+(range*0.45);
+   close= getHighPrice(num)-(range*0.45);
+   
+   if(isCandleBullOrBear(num)=="Bull" && getOpenPrice(num)>=open && getClosePrice(num)<=close)
+   {
+      candle="dojiGreen";
+   }
+   else if(isCandleBullOrBear(num)=="Bear" && getOpenPrice(num)<=close && getClosePrice(num)>=open)
+   {
+      candle="dojiRed";
+   }
+   else if(getOpenPrice(num)==getClosePrice(num))
+   {
+      candle="doji";
+   }
+   else
+      candle="none";
+      
+   return candle;
+}
+
+
+string entrySignal()
+{
+   
+//------EMA Calculation
+   double ema9Array[], ema20Array[];
+   int ema9 = iMA(_Symbol,_Period,9,0,MODE_EMA,PRICE_CLOSE);
+   int ema20 = iMA(_Symbol,_Period,20,0,MODE_EMA,PRICE_CLOSE);
+   ArraySetAsSeries(ema9Array,true);
+   ArraySetAsSeries(ema20Array,true);
+   CopyBuffer(ema9,0,0,3,ema9Array);
+   CopyBuffer(ema20,0,0,3,ema20Array);
+   
+   double emaGapUpTrend;
+   double emaGapDownTrend;
+   double GapEMA=0.000120;
+   
+   emaGapUpTrend=ema9Array[1]-ema20Array[1];
+   emaGapDownTrend=ema20Array[1]-ema9Array[1];
+//-----------
+   string entry = "";
+
+   if(isCandleBullOrBear(1)=="Bull" && isCandleBullOrBear(2)=="Bull" && isCandleBullOrBear(3)=="Bull" && PositionsTotal()==1 && getOrderType()==1 && ema9Array[1]<ema20Array[1])
+      {
+         entry="Close";
+      }
+      
+   else if(isHammer(1)=="Hammer" && PositionsTotal()==1 && getOrderType()==1 && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1])  
+      {
+         entry="HammerClose";    //if status = sell and found 1st hammer candle then Close the position
+      }
+      
+   else if(isHammerGreen(1)=="HammerGreen" && PositionsTotal()==1 && getOrderType()==1 && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1])  
+      {
+         entry="HammerClose";    //if status = sell and found 1st hammer candle then Close the position
+      }
+      
+   else if(engulfingSignal()=="Sell" && PositionsTotal()==1 && ema9Array[1]>ema20Array[1] && getClosePrice(2)>ema9Array[2])
+      {
+         entry="BearishEngulfing_Close";
+      }
+      
+   else if(isMorningStar(1)=="MorningStar" && PositionsTotal()==1 && getOrderType()==0 && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1])
+      {
+         entry="MorningStar_Close";
+      }
+      
+   else if(isMorningStar(1)=="MorningStarRed" && PositionsTotal()==1 && getOrderType()==0 && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1])
+      {
+         entry="MorningStar_Close";
+      }
+      
+   else if(isMorningStar(2)=="MorningStar" && PositionsTotal()==0 && getOpenPrice(2)>ema9Array[2] && getClosePrice(2)>ema9Array[2] && getClosePrice(2)>ema20Array[2])
+      {
+         entry="MorningStar_Sell";
+      }
+      
+   else if(isMorningStar(2)=="MorningStarRed" && PositionsTotal()==0 && getClosePrice(2)>ema9Array[2] && getClosePrice(2)>ema20Array[2])
+      {
+         entry="MorningStar_Sell";
+      }
+      
+   else if(isHammer(2)=="Hammer" && PositionsTotal()==0 && getClosePrice(1)<ema20Array[1] && getClosePrice(1)<ema9Array[1] && getClosePrice(2)<ema9Array[2] && getClosePrice(2)<ema20Array[2])  
+      {
+         entry="Hammer_Buy";    //if status = sell and found 1st hammer candle then Close the position
+      }
+      
+   
+   else if(ema9Array[1]>ema20Array[1] && PositionsTotal()==1 && getOrderType()==0 && isCandleBullOrBear(3)=="Bull" && isCandleBullOrBear(2)=="Bear" && isCandleBullOrBear(1)=="Bear" && getClosePrice(1)>ema9Array[1])
+      {
+         entry="TurnDown";
+      }
+   else if(ema9Array[1]<ema20Array[1] && PositionsTotal()==1 && getOrderType()==1 && isCandleBullOrBear(3)=="Bear" && isCandleBullOrBear(2)=="Bull" && isCandleBullOrBear(1)=="Bull" && getClosePrice(1)<ema9Array[1])
+      {
+         entry="TurnUp";
+      }
+      
+   else if(getOpenPrice(2)>ema9Array[2] && getClosePrice(2)<ema20Array[2] && ema9Array[2]>ema20Array[2] && getClosePrice(1)<ema9Array[1] && emaGapUpTrend>GapEMA && PositionsTotal()==0) 
+      {
+         entry="CrossDown";  //If previous candle cross down then take action afterward  
+      }
+      
+   else if(isCandleBullOrBear(1)=="Bear" && PositionsTotal()==1 && getOpenPrice(1)>ema9Array[1] && getClosePrice(1)<ema20Array[1] && ema9Array[1]>ema20Array[1] && emaGapUpTrend>GapEMA) 
+      {
+         entry="CrossDownClose";  //If previous candle cross down then take action afterward  
+      }
+        
+   else if(isMorningStar(2)=="MorningStar" && PositionsTotal()==0 && ema9Array[1]>ema20Array[1] && getClosePrice(2)>ema9Array[2])
+      {
+         entry="MorningStar_Sell";
+      } 
+       
+   else if(engulfingSell()=="Sell" && ema9Array[1]>ema20Array[1] && PositionsTotal()==0 && emaGapUpTrend>GapEMA)
+      {
+         entry="BearishEngulfing_Sell";
+      }
+      
+   //else if(isMorningStar(2)=="MorningStar" && getOpenPrice(1)>=getOpenPrice(2) && getClosePrice(1)<getClosePrice(2) && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1])
+   //   {
+   //      entry="MorningStar";
+   //   }
+      
+   else if(isDoji(1)=="dojiGreen" && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1] && PositionsTotal()==1 && emaGapUpTrend>GapEMA)
+      {
+         entry="Doji_Above_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
+      }
+      
+   else if(isDoji(1)=="dojiRed" && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1] && PositionsTotal()==1 && emaGapUpTrend>GapEMA)
+      {
+         entry="Doji_Above_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
+      }
+      
+   else if(isDoji(2)=="dojiGreen" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2] && emaGapUpTrend>GapEMA)
+      {
+         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
+      }
+      
+   else if(isDoji(2)=="dojiRed" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2] && emaGapUpTrend>GapEMA)
+      {
+         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
+      }
+      
+   else if(isDoji(2)=="doji" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2] && emaGapUpTrend>GapEMA)
+      {
+         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
+      }
+      
+   else if(engulfingSignal()=="Buy" && getClosePrice(2)<ema20Array[2] && getClosePrice(2)<ema9Array[2] && PositionsTotal()==1)
+      {
+         entry="BullishEngulfing_Close";
+      }
+      
+   else if(engulfingBuy()=="Buy" && getClosePrice(3)<ema9Array[3] && getClosePrice(3)<ema9Array[3] && PositionsTotal()==0)
+      {
+         entry="BullishEngulfing_Buy";
+      }
+      
+   else if(getOpenPrice(2)<ema9Array[2] && getClosePrice(2)>ema20Array[2] && ema9Array[2]<ema20Array[2] && getClosePrice(1)>ema9Array[1] && emaGapDownTrend>GapEMA && PositionsTotal()==0) 
+      {
+         entry="CrossUp";  //If previous candle cross up then take action afterward  
+      }
+      
+   else if(isCandleBullOrBear(1)=="Bull" && PositionsTotal()==1 && getOpenPrice(1)<ema9Array[1] && getClosePrice(1)>ema20Array[1] && ema9Array[1]<ema20Array[1] && emaGapDownTrend>=GapEMA && PositionsTotal()==1) 
+      {
+         entry="CrossUpClose";  //If previous candle cross up then take action afterward  
+      }
+      
+   else if(isDoji(1)=="dojiGreen" && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1] && PositionsTotal()==1 && emaGapDownTrend>GapEMA)
+      {
+         entry="Doji_Under_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
+      }
+      
+   else if(isDoji(1)=="dojiRed" && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1] && PositionsTotal()==1 && emaGapDownTrend>GapEMA)
+      {
+         entry="Doji_Under_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
+      }
+      
+   else
+         entry="Waiting for a position signal";   
+        
+         
+     return entry;
+  
+}
+
+
+string isTrend()
+{
+   int ema9 = iMA(_Symbol,_Period,9,0,MODE_EMA,PRICE_CLOSE);
+   int ema20 = iMA(_Symbol,_Period,20,0,MODE_EMA,PRICE_CLOSE);
+   
+   string trend="";
+   
+   if(EMA9()>EMA20())
+   {
+      trend="UpTrend";
+   }
+   
+   if(EMA9()<EMA20())
+   {
+      trend="DownTrend";
+   }
+   return trend;
+}
