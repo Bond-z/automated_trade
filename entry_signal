@@ -232,19 +232,12 @@ string checkEntryBuy()  //use for execute trade
       {   
          entry="Buy";
       }
-   //else if(ema9Array[1]>ema20Array[1] || getClosePrice(1)>ema20Array[1])
-   //   {
-   //      entry="Buy";
-   //   }
         
    else if(getClosePrice(1)<ema20Array[1] && getOpenPrice(1)>ema9Array[1] && ema9Array[1]>ema20Array[1])  //if((ema9Array[0]<ema20Array[0]) && (priceOpen>priceClose) && (ema9Array[1]>ema20Array[1]))
       {
          entry="Close";
       } 
-   //else if(ema20Array[2]>ema9Array[2] && getClosePrice(2)<ema9Array[2] && getOpenPrice(2)>ema20Array[2])
-   //   {
-   //      entry="Close";
-   //   }  
+ 
    else
          entry="False";   
         
@@ -535,28 +528,69 @@ string entrySignal()
    emaGapDownTrend=ema20Array[1]-ema9Array[1];
 //-----------
    string entry = "";
-
-   if(isCandleBullOrBear(1)=="Bull" && isCandleBullOrBear(2)=="Bull" && isCandleBullOrBear(3)=="Bull" && PositionsTotal()==1 && getOrderType()==1 && ema9Array[1]<ema20Array[1])
-      {
-         entry="Close";
-      }
-      
-   else if(isHammer(1)=="Hammer" && PositionsTotal()==1 && getOrderType()==1 && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1])  
+   //---------------------------Close Sell------------------------------------------------------//
+   if(isHammer(1)=="Hammer" && PositionsTotal()==1 && getClosePrice(1)<ema9Array[1])  
       {
          entry="HammerClose";    //if status = sell and found 1st hammer candle then Close the position
       }
       
-   else if(isHammerGreen(1)=="HammerGreen" && PositionsTotal()==1 && getOrderType()==1 && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1])  
+   else if(isHammerGreen(1)=="HammerGreen" && PositionsTotal()==1 && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1])  
       {
          entry="HammerClose";    //if status = sell and found 1st hammer candle then Close the position
       }
+   
+   else if(engulfingSignal()=="Buy" && getClosePrice(2)<ema20Array[2] && getClosePrice(2)<ema9Array[2] && PositionsTotal()==1)
+      {
+         entry="BullishEngulfing_Close";
+      }
+   
+   else if(ema9Array[1]<ema20Array[1] && PositionsTotal()==1 && isCandleBullOrBear(3)=="Bear" && isCandleBullOrBear(2)=="Bull" && isCandleBullOrBear(1)=="Bull" && getClosePrice(1)<ema9Array[1])
+      {
+         entry="TurnUp";
+      }
       
+   else if(isDoji(1)=="dojiGreen" && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1] && PositionsTotal()==1)
+      {
+         entry="Doji_Under_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
+      }
+      
+   else if(isDoji(1)=="dojiRed" && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1] && PositionsTotal()==1)
+      {
+         entry="Doji_Under_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
+      }
+   else if(getOpenPrice(1)==getClosePrice(1) && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1] && PositionsTotal()==1)
+      {
+         entry="Doji_Under_Close";
+      }
+   
+   else if(isCandleBullOrBear(1)=="Bull" && PositionsTotal()==1 && getOpenPrice(1)<ema9Array[1] && getClosePrice(1)>ema20Array[1] && ema9Array[1]<ema20Array[1] && PositionsTotal()==1) 
+      {
+         entry="CrossUpClose";  //If previous candle cross up then take action afterward  
+      }
+       
+   //--------------------------------------------Buy-----------------------------------------------//
+   else if(isHammer(2)=="Hammer" && PositionsTotal()==0 && getClosePrice(1)<ema9Array[1] && getClosePrice(2)<ema9Array[2])  
+      {
+         entry="Hammer_Buy";    //if status = sell and found 1st hammer candle then Close the position
+      }
+   
+   else if(engulfingBuy()=="Buy" && getClosePrice(3)<ema9Array[3] && getClosePrice(3)<ema20Array[3] && PositionsTotal()==0)
+      {
+         entry="BullishEngulfing_Buy";
+      } 
+      
+   else if(isDoji(2)=="doji" && ema9Array[2]<ema20Array[2] && getClosePrice(2)<ema9Array[2])
+      {
+         entry="Doji_Buy";   //2nd Doji on down trend --> Buy
+      } 
+      
+   //-------------------------------------------Close Buy-------------------------------------------//
    else if(engulfingSignal()=="Sell" && PositionsTotal()==1 && ema9Array[1]>ema20Array[1] && getClosePrice(2)>ema9Array[2])
       {
          entry="BearishEngulfing_Close";
       }
       
-   else if(isMorningStar(1)=="MorningStar" && PositionsTotal()==1 && getOrderType()==0 && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1])
+   else if(isMorningStar(1)=="MorningStar" && PositionsTotal()==1 && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1])
       {
          entry="MorningStar_Close";
       }
@@ -565,6 +599,47 @@ string entrySignal()
       {
          entry="MorningStar_Close";
       }
+   
+   else if(ema9Array[1]>ema20Array[1] && PositionsTotal()==1 && isCandleBullOrBear(3)=="Bull" && isCandleBullOrBear(2)=="Bear" && isCandleBullOrBear(1)=="Bear" && getClosePrice(1)>ema9Array[1])
+      {
+         entry="TurnDown";
+      }  
+      
+   else if(isDoji(1)=="dojiGreen" && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1] && PositionsTotal()==1)
+      {
+         entry="Doji_Above_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
+      }
+      
+   else if(isDoji(1)=="dojiRed" && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1] && PositionsTotal()==1)
+      {
+         entry="Doji_Above_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
+      }
+      
+   else if(getOpenPrice(1)==getClosePrice(1) && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1] && PositionsTotal()==1)
+      {
+         entry="Doji_Above_Close";
+      }
+      
+   else if(isCandleBullOrBear(1)=="Bear" && PositionsTotal()==1 && getOpenPrice(1)>ema9Array[1] && getClosePrice(1)<ema20Array[1] && ema9Array[1]>ema20Array[1]) 
+      {
+         entry="CrossDownClose";  //If previous candle cross down then take action afterward  
+      } 
+      
+    //----------------------------------------------Sell---------------------------------------------------//  
+   else if(isDoji(2)=="doji" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2])
+      {
+         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
+      }
+      
+   else if(isDoji(2)=="dojiGreen" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2])
+      {
+         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
+      }
+      
+   else if(isDoji(2)=="dojiRed" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2])
+      {
+         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
+      }  
       
    else if(isMorningStar(2)=="MorningStar" && PositionsTotal()==0 && getOpenPrice(2)>ema9Array[2] && getClosePrice(2)>ema9Array[2] && getClosePrice(2)>ema20Array[2])
       {
@@ -576,101 +651,16 @@ string entrySignal()
          entry="MorningStar_Sell";
       }
       
-   else if(isHammer(2)=="Hammer" && PositionsTotal()==0 && getClosePrice(1)<ema20Array[1] && getClosePrice(1)<ema9Array[1] && getClosePrice(2)<ema9Array[2] && getClosePrice(2)<ema20Array[2])  
+   else if(isMorningStar(2)=="MorningStar" && getOpenPrice(1)>=getOpenPrice(2) && getClosePrice(1)<getClosePrice(2) && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1])
       {
-         entry="Hammer_Buy";    //if status = sell and found 1st hammer candle then Close the position
+         entry="MorningStar";
       }
-      
-   
-   else if(ema9Array[1]>ema20Array[1] && PositionsTotal()==1 && getOrderType()==0 && isCandleBullOrBear(3)=="Bull" && isCandleBullOrBear(2)=="Bear" && isCandleBullOrBear(1)=="Bear" && getClosePrice(1)>ema9Array[1])
-      {
-         entry="TurnDown";
-      }
-   else if(ema9Array[1]<ema20Array[1] && PositionsTotal()==1 && getOrderType()==1 && isCandleBullOrBear(3)=="Bear" && isCandleBullOrBear(2)=="Bull" && isCandleBullOrBear(1)=="Bull" && getClosePrice(1)<ema9Array[1])
-      {
-         entry="TurnUp";
-      }
-      
-   else if(getOpenPrice(2)>ema9Array[2] && getClosePrice(2)<ema20Array[2] && ema9Array[2]>ema20Array[2] && getClosePrice(1)<ema9Array[1] && emaGapUpTrend>GapEMA && PositionsTotal()==0) 
-      {
-         entry="CrossDown";  //If previous candle cross down then take action afterward  
-      }
-      
-   else if(isCandleBullOrBear(1)=="Bear" && PositionsTotal()==1 && getOpenPrice(1)>ema9Array[1] && getClosePrice(1)<ema20Array[1] && ema9Array[1]>ema20Array[1] && emaGapUpTrend>GapEMA) 
-      {
-         entry="CrossDownClose";  //If previous candle cross down then take action afterward  
-      }
-        
-   else if(isMorningStar(2)=="MorningStar" && PositionsTotal()==0 && ema9Array[1]>ema20Array[1] && getClosePrice(2)>ema9Array[2])
-      {
-         entry="MorningStar_Sell";
-      } 
-       
-   else if(engulfingSell()=="Sell" && ema9Array[1]>ema20Array[1] && PositionsTotal()==0 && emaGapUpTrend>GapEMA)
+    
+   else if(engulfingSell()=="Sell" && ema9Array[1]>ema20Array[1] && PositionsTotal()==0)
       {
          entry="BearishEngulfing_Sell";
       }
-      
-   //else if(isMorningStar(2)=="MorningStar" && getOpenPrice(1)>=getOpenPrice(2) && getClosePrice(1)<getClosePrice(2) && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1])
-   //   {
-   //      entry="MorningStar";
-   //   }
-      
-   else if(isDoji(1)=="dojiGreen" && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1] && PositionsTotal()==1 && emaGapUpTrend>GapEMA)
-      {
-         entry="Doji_Above_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
-      }
-      
-   else if(isDoji(1)=="dojiRed" && ema9Array[1]>ema20Array[1] && getClosePrice(1)>ema9Array[1] && PositionsTotal()==1 && emaGapUpTrend>GapEMA)
-      {
-         entry="Doji_Above_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
-      }
-      
-   else if(isDoji(2)=="dojiGreen" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2] && emaGapUpTrend>GapEMA)
-      {
-         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
-      }
-      
-   else if(isDoji(2)=="dojiRed" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2] && emaGapUpTrend>GapEMA)
-      {
-         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
-      }
-      
-   else if(isDoji(2)=="doji" && ema9Array[2]>ema20Array[2] && getClosePrice(2)>ema9Array[2] && emaGapUpTrend>GapEMA)
-      {
-         entry="Doji_Sell";   //2nd Doji on up trend --> Sell
-      }
-      
-   else if(engulfingSignal()=="Buy" && getClosePrice(2)<ema20Array[2] && getClosePrice(2)<ema9Array[2] && PositionsTotal()==1)
-      {
-         entry="BullishEngulfing_Close";
-      }
-      
-   else if(engulfingBuy()=="Buy" && getClosePrice(3)<ema9Array[3] && getClosePrice(3)<ema9Array[3] && PositionsTotal()==0)
-      {
-         entry="BullishEngulfing_Buy";
-      }
-      
-   else if(getOpenPrice(2)<ema9Array[2] && getClosePrice(2)>ema20Array[2] && ema9Array[2]<ema20Array[2] && getClosePrice(1)>ema9Array[1] && emaGapDownTrend>GapEMA && PositionsTotal()==0) 
-      {
-         entry="CrossUp";  //If previous candle cross up then take action afterward  
-      }
-      
-   else if(isCandleBullOrBear(1)=="Bull" && PositionsTotal()==1 && getOpenPrice(1)<ema9Array[1] && getClosePrice(1)>ema20Array[1] && ema9Array[1]<ema20Array[1] && emaGapDownTrend>=GapEMA && PositionsTotal()==1) 
-      {
-         entry="CrossUpClose";  //If previous candle cross up then take action afterward  
-      }
-      
-   else if(isDoji(1)=="dojiGreen" && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1] && PositionsTotal()==1 && emaGapDownTrend>GapEMA)
-      {
-         entry="Doji_Under_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
-      }
-      
-   else if(isDoji(1)=="dojiRed" && ema9Array[1]<ema20Array[1] && getClosePrice(1)<ema9Array[1] && PositionsTotal()==1 && emaGapDownTrend>GapEMA)
-      {
-         entry="Doji_Under_Close";   //1st Doji on up trend --> Close --> edit doji close_price should happens at the middle of candle
-      }
-      
+  
    else
          entry="Waiting for a position signal";   
         
