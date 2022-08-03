@@ -20,87 +20,88 @@ void OnTick()
    double ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
    double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID);
    
-   string trend=isTrend();
-   string signal=entrySignal();
-   int type=getOrderType();
+   Comment("Signal : "+entrySignal() + "\n",
+           "I'm in a position of : "+getOrderType());  
    
-   Comment("Waiting for signal : "+trend + "\n",
-           "Signal : "+ signal+ "\n",
-           "I'm in a position of : "+type);  
-           
-           
+   //------------------------------------Close order buy------------------------------------//       
+   if(entrySignal()=="MorningStar_Close" && getOrderType()==0)
+   trade.PositionClose(PositionGetTicket(0));
    
-   if(signal=="CrossDown" && PositionsTotal()==0) 
-   trade.Sell(0.10,_Symbol,bid,bid+100* _Point,bid-400* _Point,Red);
-
-   
-   if(signal=="MorningStar_Sell" && PositionsTotal()==0)
-   trade.Sell(0.10,_Symbol,bid,bid+100* _Point,bid-400* _Point,Red);
-   
-   if(signal=="Doji_Sell" && PositionsTotal()==0)
-   trade.Sell(0.10,_Symbol,bid,bid+100* _Point,bid-400* _Point,Red);
-
-   
-   if(signal=="Hammer_Buy" && PositionsTotal()==0) 
-   orderBuy();
-
-   
-   if(signal=="BearishEngulfing_Close" && PositionsTotal()==1)
+   if(entrySignal()=="BearishEngulfing_Close" && getOrderType()==0)
    trade.PositionClose(PositionGetTicket(0)); 
    
-   if(signal=="BearishEngulfing_Sell" && PositionsTotal()==0) 
-   trade.Sell(0.10,_Symbol,bid,bid+100* _Point,bid-400* _Point,Red);
-   
-   if(signal=="BullishEngulfing_Close" && getOrderType()==1)
+   if(entrySignal()=="CrossDownClose" && getOrderType()==0)
    trade.PositionClose(PositionGetTicket(0));
    
-   if(signal=="BullishEngulfing_Buy" && PositionsTotal()==0) 
-   orderBuy();
+   if(entrySignal()=="Doji_Above_Close" && getOrderType()==0)
+   trade.PositionClose(PositionGetTicket(0));
    
-   if(signal=="CrossUp" && PositionsTotal()==0) 
-   orderBuy();
+   if(entrySignal()=="TurnDown" && getOrderType()==0)
+   trade.PositionClose(PositionGetTicket(0));
+   
+   
+   //------------------------------------Order SELL------------------------------------//
+   if(entrySignal()=="Doji_Sell" && PositionsTotal()==0)
+   orderSell();
+   
+   if(entrySignal()=="MorningStar_Sell" && PositionsTotal()==0)
+   orderSell();
 
-   if(signal=="MorningStar_Close" && getOrderType()==0)
+   if(entrySignal()=="BearishEngulfing_Sell" && PositionsTotal()==0) 
+   orderSell();
+   
+   //------------------------------------Close order SELL------------------------------------//
+   if(entrySignal()=="BullishEngulfing_Close" && getOrderType()==1)
    trade.PositionClose(PositionGetTicket(0));
    
-   if(signal=="Close" && getOrderType()==1)
+   if(entrySignal()=="HammerClose" && getOrderType()==1)
    trade.PositionClose(PositionGetTicket(0));
    
-   if(signal=="TurnDown" && getOrderType()==0)
+   if(entrySignal()=="Doji_Under_Close" && getOrderType()==1)
    trade.PositionClose(PositionGetTicket(0));
    
-   if(signal=="TurnUp" && getOrderType()==1)
+   if(entrySignal()=="CrossUpClose" && getOrderType()==1)
    trade.PositionClose(PositionGetTicket(0));
    
-   if(signal=="HammerClose" && getOrderType()==1)
+   if(entrySignal()=="TurnUp" && getOrderType()==1)
    trade.PositionClose(PositionGetTicket(0));
    
-   if(signal=="Close" && getOrderType()==0)
-   trade.PositionClose(PositionGetTicket(0));
+   //------------------------------------Order buy------------------------------------//
+   if(entrySignal()=="Hammer_Buy" && PositionsTotal()==0) 
+   orderBuy();
    
-   if(signal=="Doji_Above_Close" && getOrderType()==0)
-   trade.PositionClose(PositionGetTicket(0));
+   if(entrySignal()=="BullishEngulfing_Buy" && PositionsTotal()==0) 
+   orderBuy();
    
-   if(signal=="Doji_Under_Close" && getOrderType()==1)
-   trade.PositionClose(PositionGetTicket(0));
-   
-   //if(signal=="CrossDownClose" && getOrderType()==0)
-   //trade.PositionClose(PositionGetTicket(0));
-   
-   //if(signal=="CrossUpClose" && getOrderType()==1)
-   //trade.PositionClose(PositionGetTicket(0));
+   if(entrySignal()=="Doji_Buy" && PositionsTotal()==0) 
+   orderBuy();
 
   }
 //+------------------------------------------------------------------+
 
-string orderBuy()
+void orderBuy()
 {
    bool buy=false;
    double ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
    if(buy==false)
    {
-      buy=trade.Buy(0.10,_Symbol,ask,ask-100* _Point,ask+500* _Point,Green);
+      trade.Buy(0.02,_Symbol,ask,ask-100* _Point,ask+500* _Point,Green);
       buy=true;
    }
-   return buy;
+   else 
+      buy=true;
+}
+
+
+void orderSell()
+{
+   bool sell=false;
+   double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID);
+   if(sell==false)
+   {
+      trade.Sell(0.02,_Symbol,bid,bid+100* _Point,bid-400* _Point,Red);
+      sell=true;
+   }
+   else 
+      sell=true;
 }
