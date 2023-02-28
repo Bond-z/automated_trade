@@ -1,0 +1,206 @@
+#include <Trade\Trade.mqh>
+CTrade trade;
+
+
+void OnTick()
+  {
+      string entry="";
+      int ema_fast=20;
+      int ema_slow=50;
+      
+      static double LastStopEnvelopesValueSell;
+      static double LastStopEnvelopesValueBuy;
+      
+      double ask=NormalizeDouble(SymbolInfoDouble(_Symbol,SYMBOL_ASK),_Digits);
+      double bid=NormalizeDouble(SymbolInfoDouble(_Symbol,SYMBOL_BID),_Digits);
+      
+      double emaFastArray[], emaSlowArray[];
+      int FastEMA = iMA(_Symbol,_Period,ema_fast,0,MODE_EMA,PRICE_CLOSE);
+      int SlowEMA = iMA(_Symbol,_Period,ema_slow,0,MODE_EMA,PRICE_CLOSE);
+      
+      ArraySetAsSeries(emaFastArray,true);
+      ArraySetAsSeries(emaSlowArray,true);
+      
+      CopyBuffer(FastEMA,0,0,3,emaFastArray);
+      CopyBuffer(SlowEMA,0,0,3,emaSlowArray);
+      
+      string candle = isMorningStar(1);
+      string hammer = isHammer(1);
+      
+      double signalBuy = emaFastArray[1] - getClosePrice(1);
+      double signalSell = getClosePrice(1) - emaFastArray[1];
+      
+      Comment("Is Hammer:",isHammer(1), "\n","Is Morning star: ",isMorningStar(1), "\n", "Signal: ",signalBuy);
+         
+
+       if(PositionsTotal()<1 && isHammer(1) == "Hammer" && getClosePrice(1) < emaFastArray[1]) {
+            LastStopEnvelopesValueBuy=0;
+            trade.Buy(0.2,_Symbol,ask,0,ask+150* _Point,"Hammer");
+         }
+         
+       if(PositionsTotal()<1 && isMorningStar(1) == "MorningStar" && getClosePrice(1) > emaFastArray[1]){
+            LastStopEnvelopesValueSell=0;
+            trade.Sell(0.2,_Symbol,bid,0,bid-150* _Point,"MorningStar");
+         }
+         
+       if(PositionsTotal()<1 && isMorningStar(1) == "MorningStarRed" && getClosePrice(1) > emaFastArray[1]){
+            LastStopEnvelopesValueSell=0;
+            trade.Sell(0.2,_Symbol,bid,0,bid-150* _Point,"MorningStarRed");
+         }
+         
+//       if(PositionsTotal()>0 && isMorningStar(0) == "MorningStar" && getClosePrice(1) > emaFastArray[1])
+//         {
+//            trade.PositionClose(PositionGetTicket(0));
+//         }
+//         
+//       if(PositionsTotal()>0 && getOpenPrice(1) == getClosePrice(1) && getClosePrice(1) > emaFastArray[1])
+//         {
+//            trade.PositionClose(PositionGetTicket(0));
+//         }
+     
+     double UpperBandArray[];
+     double LowerBandArray[];
+     
+     ArraySetAsSeries(UpperBandArray,true);
+     ArraySetAsSeries(LowerBandArray,true);
+     
+     int EnvelopesDefinition=iEnvelopes(_Symbol,_Period,14,3,MODE_EMA,PRICE_CLOSE,0.100);
+
+     //Copy price data into array
+     CopyBuffer(EnvelopesDefinition,0,0,3,UpperBandArray);
+     CopyBuffer(EnvelopesDefinition,1,0,3,LowerBandArray);
+     
+     //Calculate the values for the current candle
+     double myUpperBandValue=NormalizeDouble(UpperBandArray[0],6);
+     double myLowerBandValue=NormalizeDouble(LowerBandArray[0],6);
+     
+     //Calculate the values for the last candle
+     double myLastUpperBandValue=NormalizeDouble(UpperBandArray[1],6);
+     double myLastLowerBandValue=NormalizeDouble(LowerBandArray[1],6);
+     
+      CheckEnvelopeSellTrailingStop(myLastUpperBandValue);
+      LastStopEnvelopesValueSell= myLastUpperBandValue;
+      
+      CheckEnvelopeSellTrailingStop(myLastLowerBandValue);
+      LastStopEnvelopesValueBuy= myLastLowerBandValue;
+ }
+
+
+void CheckEnvelopeSellTrailingStop(double myLastUpperBandValue)
+   {
+      for(int i=PositionsTotal()-1; i>=0; i--)
+      {
+         string symbol=PositionGetSymbol(i);
+         
+         if(_Symbol == symbol)
+         {
+            ulong PositionTicket=PositionGetInteger(POSITION_TICKET);
+            double CurrentStopLoss=PositionGetDouble(POSITION_SL);
+            
+            if((CurrentStopLoss>myLastUpperBandValue)||(CurrentStopLoss==0))
+            {
+               trade.PositionModify(PositionTicket,myLastUpperBandValue,0);
+            }
+         }
+      }
+   }
+   
+void CheckEnvelopeBuyTrailingStop(double myLastLowerBandValue)
+   {
+      for(int i=PositionsTotal()-1; i>=0; i--)
+      {
+         string symbol=PositionGetSymbol(i);
+         
+         if(_Symbol == symbol)
+         {
+            ulong PositionTicket=PositionGetInteger(POSITION_TICKET);
+            double CurrentStopLoss=PositionGetDouble(POSITION_SL);
+            
+            if((CurrentStopLoss>myLastLowerBandValue)||(CurrentStopLoss==0))
+            {
+               trade.PositionModify(PositionTicket,myLastLowerBandValue,0);
+            }
+         }
+      }
+   }
+   
+double getOpenPrice(int num){
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double openPrice=PriceInformation[num].open;
+   
+   return openPrice;
+}
+   
+double getClosePrice(int num){
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double closePrice=PriceInformation[num].close;
+   
+   return closePrice;
+   }
+  
+double getHighPrice(int num){
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double highPrice=PriceInformation[num].high;
+   
+   return highPrice;
+   }
+  
+double getLowPrice(int num){
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double lowPrice=PriceInformation[num].low;
+   
+   return lowPrice;
+   }
+   
+string isMorningStar(int num){
+   string candle="";
+   double gap;
+   double ratio;
+   
+   gap= getHighPrice(num)-getLowPrice(num);
+   ratio= (gap*0.30)+ getLowPrice(num);
+   
+   if((getClosePrice(num)<=ratio) && (getOpenPrice(num)>=getLowPrice(num)) && (getClosePrice(num) >= getOpenPrice(num))){
+      
+      candle="MorningStar";
+   }else if(getOpenPrice(1)<=ratio && getClosePrice(1)<=ratio && getClosePrice(1)<=getOpenPrice(1)){
+      candle="MorningStarRed";
+   }else
+   
+      candle="None";
+      
+   return candle;
+   
+}
+
+string isHammer(int num){
+   string candle="";
+   double gap;
+   double ratio;
+   
+   gap= getHighPrice(num)-getLowPrice(num);
+   ratio= getHighPrice(num)-(gap*0.35);
+   
+   if(getClosePrice(num)>=ratio && getOpenPrice(num)>=getClosePrice(num)){
+      candle="Hammer";
+   }else
+      candle="None";
+      
+   return candle;
+}
