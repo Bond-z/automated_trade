@@ -1,0 +1,90 @@
+#include <Trade\Trade.mqh>
+CTrade trade;
+
+int barsTotal;
+
+
+  
+void OnTick(){
+   int bars = iBars(_Symbol,PERIOD_CURRENT);
+   
+   int ema_fast=20;
+   int ema_slow=50;
+   
+   double ask=NormalizeDouble(SymbolInfoDouble(_Symbol,SYMBOL_ASK),_Digits);
+   double bid=NormalizeDouble(SymbolInfoDouble(_Symbol,SYMBOL_BID),_Digits);
+   
+   double emaFastArray[], emaSlowArray[];
+   int FastEMA = iMA(_Symbol,_Period,ema_fast,0,MODE_EMA,PRICE_CLOSE);
+   int SlowEMA = iMA(_Symbol,_Period,ema_slow,0,MODE_EMA,PRICE_CLOSE);
+   
+   ArraySetAsSeries(emaFastArray,true);
+   ArraySetAsSeries(emaSlowArray,true);
+   
+   CopyBuffer(FastEMA,0,0,3,emaFastArray);
+   CopyBuffer(SlowEMA,0,0,3,emaSlowArray);
+   
+  
+   
+   double above_gap = getClosePrice(1) - emaFastArray[1];
+   double below_gap = emaFastArray[1] - getClosePrice(1);
+   
+   if(PositionsTotal()<1 && below_gap <= 0.05000 && getClosePrice(1) < emaFastArray[1] && emaFastArray[2] < emaSlowArray[2]){
+         trade.Buy(0.2,_Symbol,ask,ask-100* _Point,ask+200* _Point,0);
+      }
+      
+    if(PositionsTotal()<1 && above_gap >= 0.0500 && getClosePrice(1) > emaFastArray[1] && emaFastArray[2] > emaSlowArray[2]){
+         trade.Sell(0.2,_Symbol,bid,bid+100* _Point,bid-200* _Point,0);
+      }
+
+      
+   for(int i = PositionsTotal()-1; i >= 0; i--){
+      ulong posTicket = PositionGetTicket(i);
+      if(PositionSelectByTicket(posTicket)){
+         double posSL = PositionGetDouble(POSITION_SL);
+         double posTP = PositionGetDouble(POSITION_TP);
+         
+         if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY){
+            int shift = iLowest(_Symbol,PERIOD_CURRENT,MODE_LOW,10,1);
+            double low = iLow(_Symbol,PERIOD_CURRENT,shift);
+            low = NormalizeDouble(low,_Digits);   //round the number
+            
+            if(low > posSL || posSL == 0){
+               if(trade.PositionModify(posTicket,low,posTP)){
+                  Print(__FUNCTION__," > Pos #", posTicket, "was modify");
+                  Sleep(150000);
+               }
+            }
+            
+         }else if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL){
+            int shift = iHighest(_Symbol,PERIOD_CURRENT,MODE_LOW,10,1);
+            double high = iHigh(_Symbol,PERIOD_CURRENT,shift);
+            high = NormalizeDouble(high,_Digits);   //round the number
+            
+            if(high < posSL || posSL == 0){
+               if(trade.PositionModify(posTicket,high,posTP)){
+                  Print(__FUNCTION__," > Pos #", posTicket, "was modify");
+                  Sleep(150000);
+               }
+            }
+         }
+      }
+   }
+
+}
+
+   
+double getClosePrice(int num){
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double closePrice=PriceInformation[num].close;
+   
+   return closePrice;
+   }
+  
+
+  
+
