@@ -1,0 +1,81 @@
+#include <Trade\Trade.mqh>
+CTrade trade;
+
+void OnTick()
+  {
+      string entry="";
+      int ema_fast=5;
+      int ema_slow=35;
+      
+      //static double LastStopEnvelopesValue;
+      
+      double ask=NormalizeDouble(SymbolInfoDouble(_Symbol,SYMBOL_ASK),_Digits);
+      double bid=NormalizeDouble(SymbolInfoDouble(_Symbol,SYMBOL_BID),_Digits);
+      
+      double emaFastArray[], emaSlowArray[];
+      int FastEMA = iMA(_Symbol,_Period,ema_fast,0,MODE_EMA,PRICE_CLOSE);
+      int SlowEMA = iMA(_Symbol,_Period,ema_slow,0,MODE_EMA,PRICE_CLOSE);
+      
+      ArraySetAsSeries(emaFastArray,true);
+      ArraySetAsSeries(emaSlowArray,true);
+      
+      CopyBuffer(FastEMA,0,0,3,emaFastArray);
+      CopyBuffer(SlowEMA,0,0,3,emaSlowArray);
+      
+      int HighestCandle,LowestCandle;
+      
+      double High[],Low[];
+      
+      ArraySetAsSeries(High,true);
+      ArraySetAsSeries(Low,true);
+      
+      CopyHigh(_Symbol,_Period,2,30,High);
+      
+      CopyLow(_Symbol,_Period,2,30,Low);
+      
+      //calculate the highest candle
+      HighestCandle= ArrayMaximum(High,2,30);
+      LowestCandle= ArrayMinimum(Low,2,30);
+      
+      //create an array for prices
+      MqlRates PriceInformation[];
+      
+      //sort it from current candle to oldest candle
+      ArraySetAsSeries(PriceInformation,true);
+      
+      //copy price data into the array
+      int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+      
+      double highestPrice= PriceInformation[HighestCandle].high;
+      double lowestPrice= PriceInformation[LowestCandle].low;
+      
+      double averagePrice= NormalizeDouble(((highestPrice+lowestPrice)/2),6);
+      
+      
+      Comment("Highest:",highestPrice, "\n","Average: ",averagePrice, "\n", "Lowest: ",lowestPrice);
+      
+      
+      if(PositionsTotal()<0 && getClosePrice(1) > highestPrice){
+         //trade.Buy(0.2,_Symbol,ask,(ask-150* _Point),(ask+150* _Point),NULL);
+         trade.Sell(0.2,_Symbol,bid,(bid+150* _Point),(bid-150* _Point),NULL);
+      }
+      
+      if(PositionsTotal()<0 && getClosePrice(1) < lowestPrice){
+         trade.Buy(0.2,_Symbol,ask,(ask-150* _Point),(ask+150* _Point),NULL);
+         //trade.Sell(0.2,_Symbol,bid,(bid+150* _Point),(bid-150* _Point),NULL);
+      }
+   
+  }
+
+
+double getClosePrice(int num)
+  {
+
+   MqlRates PriceInformation[];
+   ArraySetAsSeries(PriceInformation,true);
+   int Data=CopyRates(Symbol(),Period(),0,Bars(Symbol(),Period()),PriceInformation);
+   
+   double closePrice=PriceInformation[num].close;
+   
+   return closePrice;
+  }
